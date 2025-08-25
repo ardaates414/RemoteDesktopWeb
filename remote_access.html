@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Desktop Access</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input[type="text"]:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .info h3 {
+            margin: 0 0 10px 0;
+            color: #0056b3;
+        }
+        .info p {
+            margin: 0;
+            line-height: 1.5;
+        }
+        .example {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖥️ Remote Desktop Access</h1>
+            <p>Connect to a remote computer through your web browser</p>
+        </div>
+        
+        <form id="connectionForm">
+            <div class="form-group">
+                <label for="hostIP">Host IP Address:</label>
+                <input type="text" id="hostIP" placeholder="e.g., 192.168.1.100" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="port">Port (optional):</label>
+                <input type="text" id="port" placeholder="8080" value="8080">
+            </div>
+            
+            <button type="submit" class="btn">Connect to Remote Desktop</button>
+        </form>
+        
+        <div class="info">
+            <h3>ℹ️ How to Use</h3>
+            <p>1. Ask the person sharing their screen for their IP address</p>
+            <p>2. Enter the IP address above (and port if different from 8080)</p>
+            <p>3. Click "Connect" to open the remote desktop in a new tab</p>
+            <p>4. No software installation required!</p>
+        </div>
+        
+        <div class="info">
+            <h3>🔗 Example Connection</h3>
+            <p>If someone tells you their IP is <strong>192.168.1.100</strong>, you would enter:</p>
+            <div class="example">IP: 192.168.1.100</div>
+            <div class="example">Port: 8080</div>
+            <p>This would connect to: <strong>http://192.168.1.100:8080</strong></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('connectionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const hostIP = document.getElementById('hostIP').value.trim();
+            const port = document.getElementById('port').value.trim() || '8080';
+            
+            if (!hostIP) {
+                alert('Please enter a host IP address');
+                return;
+            }
+            
+            // Validate IP address format (basic validation)
+            const ipPattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            if (!ipPattern.test(hostIP)) {
+                alert('Please enter a valid IP address (e.g., 192.168.1.100)');
+                return;
+            }
+            
+            // Build the connection URL
+            const connectionURL = `http://${hostIP}:${port}`;
+            
+            // Open the remote desktop in a new tab
+            window.open(connectionURL, '_blank');
+            
+            // Show success message
+            alert(`Opening remote desktop connection to:\n${connectionURL}\n\nIf the page doesn't open, please check the IP address and try again.`);
+        });
+        
+        // Auto-focus the IP input field
+        document.getElementById('hostIP').focus();
+        
+        // Allow Enter key to submit
+        document.getElementById('hostIP').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('connectionForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>
