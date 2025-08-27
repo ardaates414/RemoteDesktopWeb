@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Host Remote Desktop Session</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .session-form {
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #28a745;
+        }
+        
+        .start-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+        
+        .start-btn:hover {
+            transform: scale(1.02);
+        }
+        
+        .start-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .session-info {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            display: none;
+        }
+        
+        .session-info.active {
+            display: block;
+        }
+        
+        .access-code {
+            background: #28a745;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 20px 0;
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+        
+        .access-url {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 15px 0;
+        }
+        
+        .copy-btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: background 0.3s ease;
+        }
+        
+        .copy-btn:hover {
+            background: #0056b3;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online {
+            background-color: #28a745;
+        }
+        
+        .status-offline {
+            background-color: #dc3545;
+        }
+        
+        .instructions {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        
+        .instructions h3 {
+            color: #0056b3;
+            margin-bottom: 15px;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border: 2px solid white;
+            border-radius: 25px;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            background: white;
+            color: #28a745;
+        }
+        
+        .qr-code {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .qr-code img {
+            max-width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .main-content {
+                padding: 25px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-btn">← Back to Home</a>
+        
+        <div class="header">
+            <h1>🖥️ Host Remote Desktop Session</h1>
+            <p>Share your screen with others through the web browser</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="session-form" id="sessionForm">
+                <h2 style="margin-bottom: 20px; color: #28a745;">Start New Session</h2>
+                
+                <div class="form-group">
+                    <label for="hostName">Your Name or Computer Name:</label>
+                    <input type="text" id="hostName" placeholder="e.g., John's Computer" value="My Computer">
+                </div>
+                
+                <button class="start-btn" onclick="startSession()" id="startBtn">
+                    🚀 Start Sharing My Screen
+                </button>
+            </div>
+            
+            <div class="session-info" id="sessionInfo">
+                <h2 style="color: #28a745; margin-bottom: 20px;">
+                    <span class="status-indicator status-online"></span>
+                    Session Active
+                </h2>
+                
+                <p style="margin-bottom: 20px; font-size: 1.1rem;">
+                    Share this access code with anyone who needs to connect to your computer:
+                </p>
+                
+                <div class="access-code" id="accessCode">Loading...</div>
+                
+                <p style="margin-bottom: 15px; font-size: 1rem;">
+                    Or share this direct link:
+                </p>
+                
+                <div class="access-url" id="accessUrl">Loading...</div>
+                
+                <div style="margin: 20px 0;">
+                    <button class="copy-btn" onclick="copyToClipboard('accessCode')">
+                        📋 Copy Access Code
+                    </button>
+                    <button class="copy-btn" onclick="copyToClipboard('accessUrl')">
+                        🔗 Copy URL
+                    </button>
+                </div>
+                
+                <div class="qr-code" id="qrCode">
+                    <!-- QR code will be generated here -->
+                </div>
+                
+                <button class="start-btn" style="background: #dc3545;" onclick="stopSession()">
+                    🛑 Stop Session
+                </button>
+                
+                <div style="margin-top: 20px; padding: 20px; background: #e7f3ff; border-radius: 10px;">
+                    <h4 style="color: #0056b3; margin-bottom: 15px;">🚀 Start Host Application</h4>
+                    <p style="color: #0056b3; margin-bottom: 15px;">
+                        To actually share your screen, you need to run the host desktop application:
+                    </p>
+                    <button class="copy-btn" style="background: #28a745;" onclick="startHostApplication()">
+                        🖥️ Start Host Desktop App
+                    </button>
+                    <p style="color: #0056b3; margin-top: 15px; font-size: 0.9rem;">
+                        This will open a new terminal and start capturing your screen
+                    </p>
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <h3>📋 How to Use:</h3>
+                <ol>
+                    <li><strong>Start Session:</strong> Click the button above to begin sharing your screen</li>
+                    <li><strong>Share Access Code:</strong> Give the generated code to people who need to connect</li>
+                    <li><strong>Remote Access:</strong> They can enter the code on the client page to connect</li>
+                    <li><strong>Control:</strong> Remote users can view and control your computer through their browser</li>
+                    <li><strong>Stop When Done:</strong> Click "Stop Session" to end the connection</li>
+                </ol>
+                
+                <p style="margin-top: 15px; font-weight: 600; color: #0056b3;">
+                    ⚠️ <strong>Security Note:</strong> Only share your access code with trusted individuals. 
+                    Anyone with the code can control your computer.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let sessionInterval = null;
+        
+        function startSession() {
+            const hostName = document.getElementById('hostName').value.trim();
+            
+            if (!hostName) {
+                alert('Please enter a name for your computer');
+                return;
+            }
+            
+            // Disable start button
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').textContent = 'Starting Session...';
+            
+            // Create session
+            fetch('/api/create_session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    host_name: hostName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentSessionId = data.session_id;
+                    showSessionInfo(data);
+                    startSessionMonitoring();
+                } else {
+                    alert('Failed to create session: ' + (data.error || 'Unknown error'));
+                    resetForm();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to create session. Please try again.');
+                resetForm();
+            });
+        }
+        
+        function showSessionInfo(data) {
+            // Hide form and show session info
+            document.getElementById('sessionForm').style.display = 'none';
+            document.getElementById('sessionInfo').classList.add('active');
+            
+            // Update access code and URL
+            document.getElementById('accessCode').textContent = data.session_id;
+            document.getElementById('accessUrl').textContent = window.location.origin + '/join/' + data.session_id;
+            
+            // Generate QR code (using a simple QR service)
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.origin + '/join/' + data.session_id)}`;
+            document.getElementById('qrCode').innerHTML = `<img src="${qrUrl}" alt="QR Code for connection">`;
+        }
+        
+        function startSessionMonitoring() {
+            // Check session status every 30 seconds
+            sessionInterval = setInterval(() => {
+                if (currentSessionId) {
+                    fetch(`/api/sessions`)
+                        .then(response => response.json())
+                        .then(sessions => {
+                            const session = sessions.find(s => s.session_id === currentSessionId);
+                            if (!session) {
+                                // Session expired or removed
+                                stopSession();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Session monitoring error:', error);
+                        });
+                }
+            }, 30000);
+        }
+        
+        function stopSession() {
+            if (currentSessionId) {
+                // Clear interval
+                if (sessionInterval) {
+                    clearInterval(sessionInterval);
+                    sessionInterval = null;
+                }
+                
+                currentSessionId = null;
+                
+                // Reset UI
+                document.getElementById('sessionForm').style.display = 'block';
+                document.getElementById('sessionInfo').classList.remove('active');
+                resetForm();
+            }
+        }
+        
+        function resetForm() {
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').textContent = '🚀 Start Sharing My Screen';
+        }
+        
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showCopySuccess(elementId);
+                });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showCopySuccess(elementId);
+            }
+        }
+        
+        function showCopySuccess(elementId) {
+            const originalText = document.getElementById(elementId).textContent;
+            const button = event.target;
+            const originalButtonText = button.textContent;
+            
+            button.textContent = '✅ Copied!';
+            button.style.background = '#28a745';
+            
+            setTimeout(() => {
+                button.textContent = originalButtonText;
+                button.style.background = '#007bff';
+            }, 2000);
+        }
+        
+        function startHostApplication() {
+            if (!currentSessionId) {
+                alert('Please start a session first');
+                return;
+            }
+            
+            // Show instructions for starting host application
+            const instructions = `
+🚀 To start sharing your screen:
+
+1. Open a new terminal/command prompt
+2. Navigate to this project folder
+3. Run: python host_desktop.py
+4. When prompted, enter this session ID: ${currentSessionId}
+
+Or use the batch file: start_host_desktop.bat
+
+The host application will start capturing your screen and uploading it to the web server.
+            `;
+            
+            alert(instructions);
+            
+            // Also copy the session ID to clipboard
+            navigator.clipboard.writeText(currentSessionId).then(() => {
+                console.log('Session ID copied to clipboard');
+            });
+        }
+        
+        // Auto-focus the host name input
+        document.getElementById('hostName').focus();
+        
+        // Allow Enter key to submit
+        document.getElementById('hostName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                startSession();
+            }
+        });
+    </script>
+</body>
+</html>
