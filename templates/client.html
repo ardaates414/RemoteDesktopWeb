@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect to Remote Desktop</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .connection-form {
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .connect-btn {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+        
+        .connect-btn:hover {
+            transform: scale(1.02);
+        }
+        
+        .connect-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .available-sessions {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .available-sessions h3 {
+            color: #007bff;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .session-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .session-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .session-item:hover {
+            border-color: #007bff;
+            box-shadow: 0 5px 15px rgba(0,123,255,0.1);
+        }
+        
+        .session-info h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .session-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .join-session-btn {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .join-session-btn:hover {
+            background: #1e7e34;
+        }
+        
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border: 2px solid white;
+            border-radius: 25px;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            background: white;
+            color: #007bff;
+        }
+        
+        .instructions {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        
+        .instructions h3 {
+            color: #0056b3;
+            margin-bottom: 15px;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        .refresh-btn {
+            background: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: background 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            background: #545b62;
+        }
+        
+        .no-sessions {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 40px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .main-content {
+                padding: 25px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .session-item {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-btn">← Back to Home</a>
+        
+        <div class="header">
+            <h1>📱 Connect to Remote Desktop</h1>
+            <p>Access any computer that's sharing its screen through our platform</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="connection-form">
+                <h2 style="margin-bottom: 20px; color: #007bff;">Connect to Session</h2>
+                
+                <div class="form-group">
+                    <label for="accessCode">Access Code:</label>
+                    <input type="text" id="accessCode" placeholder="Enter the access code provided by the host">
+                </div>
+                
+                <button class="connect-btn" onclick="connectToSession()" id="connectBtn">
+                    🔗 Connect to Remote Desktop
+                </button>
+            </div>
+            
+            <div class="available-sessions">
+                <h3>🌐 Available Sessions</h3>
+                <button class="refresh-btn" onclick="loadAvailableSessions()">
+                    🔄 Refresh Sessions
+                </button>
+                
+                <div id="sessionsList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading available sessions...
+                    </div>
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <h3>📋 How to Connect:</h3>
+                <ol>
+                    <li><strong>Get Access Code:</strong> Ask the person sharing their screen for their access code</li>
+                    <li><strong>Enter Code:</strong> Type the access code in the field above</li>
+                    <li><strong>Connect:</strong> Click "Connect" to start the remote desktop session</li>
+                    <li><strong>Control:</strong> Use your mouse and keyboard to control the remote computer</li>
+                    <li><strong>File Transfer:</strong> Transfer files between your computer and the remote computer</li>
+                </ol>
+                
+                <p style="margin-top: 15px; font-weight: 600; color: #0056b3;">
+                    💡 <strong>Tip:</strong> You can also browse available sessions below and join them directly.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let availableSessions = [];
+        
+        // Load available sessions on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAvailableSessions();
+        });
+        
+        function connectToSession() {
+            const accessCode = document.getElementById('accessCode').value.trim();
+            
+            if (!accessCode) {
+                alert('Please enter an access code');
+                return;
+            }
+            
+            // Disable connect button
+            document.getElementById('connectBtn').disabled = true;
+            document.getElementById('connectBtn').textContent = 'Connecting...';
+            
+            // Try to connect to the session
+            window.location.href = `/join/${accessCode}`;
+        }
+        
+        function loadAvailableSessions() {
+            const sessionsList = document.getElementById('sessionsList');
+            sessionsList.innerHTML = '<div class="loading"><div class="spinner"></div>Loading available sessions...</div>';
+            
+            fetch('/api/sessions')
+                .then(response => response.json())
+                .then(sessions => {
+                    availableSessions = sessions;
+                    displaySessions(sessions);
+                })
+                .catch(error => {
+                    console.error('Error loading sessions:', error);
+                    sessionsList.innerHTML = '<div class="no-sessions">Failed to load sessions. Please try again.</div>';
+                });
+        }
+        
+        function displaySessions(sessions) {
+            const sessionsList = document.getElementById('sessionsList');
+            
+            if (sessions.length === 0) {
+                sessionsList.innerHTML = '<div class="no-sessions">No active sessions available at the moment.</div>';
+                return;
+            }
+            
+            let html = '';
+            sessions.forEach(session => {
+                const createdAt = new Date(session.created_at).toLocaleString();
+                const lastActivity = new Date(session.last_activity).toLocaleString();
+                
+                html += `
+                    <div class="session-item">
+                        <div class="session-info">
+                            <h4>${session.host_name}</h4>
+                            <p>Created: ${createdAt}</p>
+                            <p>Last Activity: ${lastActivity}</p>
+                            <p>Connected Clients: ${session.client_count}</p>
+                        </div>
+                        <button class="join-session-btn" onclick="joinSession('${session.session_id}')">
+                            Join Session
+                        </button>
+                    </div>
+                `;
+            });
+            
+            sessionsList.innerHTML = html;
+        }
+        
+        function joinSession(sessionId) {
+            window.location.href = `/join/${sessionId}`;
+        }
+        
+        // Auto-focus the access code input
+        document.getElementById('accessCode').focus();
+        
+        // Allow Enter key to submit
+        document.getElementById('accessCode').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                connectToSession();
+            }
+        });
+        
+        // Auto-refresh sessions every 30 seconds
+        setInterval(loadAvailableSessions, 30000);
+    </script>
+</body>
+</html>

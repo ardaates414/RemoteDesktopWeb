@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Desktop - {{ host_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: rgba(0,0,0,0.8);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .host-info h2 {
+            color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+        
+        .host-info p {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #28a745;
+            margin-right: 8px;
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .control-btn {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s ease;
+        }
+        
+        .control-btn:hover {
+            background: #555;
+        }
+        
+        .control-btn.primary {
+            background: #007bff;
+        }
+        
+        .control-btn.primary:hover {
+            background: #0056b3;
+        }
+        
+        .control-btn.danger {
+            background: #dc3545;
+        }
+        
+        .control-btn.danger:hover {
+            background: #c82333;
+        }
+        
+        .main-content {
+            margin-top: 80px;
+            height: calc(100vh - 80px);
+            display: flex;
+        }
+        
+        .desktop-container {
+            flex: 1;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+        }
+        
+        .desktop-canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            display: block;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: rgba(0,0,0,0.9);
+            border-left: 1px solid #333;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .sidebar h3 {
+            color: #fff;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .sidebar-section:last-child {
+            border-bottom: none;
+        }
+        
+        .quality-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .control-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .control-group label {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        
+        .control-group input[type="range"] {
+            width: 150px;
+        }
+        
+        .control-group span {
+            color: #fff;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: right;
+        }
+        
+        .file-transfer {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .file-input {
+            width: 100%;
+            padding: 8px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: white;
+            margin-bottom: 10px;
+        }
+        
+        .file-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .file-btn:hover {
+            background: #0056b3;
+        }
+        
+        .file-btn.danger {
+            background: #dc3545;
+        }
+        
+        .file-btn.danger:hover {
+            background: #c82333;
+        }
+        
+        .transfer-list {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .transfer-item {
+            background: #333;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .transfer-item .filename {
+            color: #fff;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .transfer-item .status {
+            color: #ccc;
+            font-size: 0.8rem;
+        }
+        
+        .transfer-item .progress {
+            background: #555;
+            height: 4px;
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        
+        .transfer-item .progress-bar {
+            background: #007bff;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .connection-info {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .info-item .label {
+            color: #ccc;
+        }
+        
+        .info-item .value {
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .fullscreen-btn {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            z-index: 1001;
+        }
+        
+        .fullscreen-btn:hover {
+            background: rgba(0,0,0,0.9);
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #333;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .control-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .control-info h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        
+        .control-info ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .control-info li {
+            margin: 5px 0;
+            color: #6c757d;
+        }
+        
+        .control-info strong {
+            color: #495057;
+        }
+        
+        small {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.8em;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 200px;
+                z-index: 1000;
+            }
+            
+            .main-content {
+                margin-bottom: 200px;
+            }
+            
+            .header {
+                padding: 10px 15px;
+            }
+            
+            .header-left {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="host-info">
+                <h2><span class="status-indicator"></span>{{ host_name }}</h2>
+                <p>Remote Desktop Session</p>
+            </div>
+        </div>
+        
+        <div class="header-controls">
+            <button class="control-btn" onclick="refreshScreen()">🔄 Refresh</button>
+            <button class="control-btn primary" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+            <button class="control-btn danger" onclick="disconnect()">❌ Disconnect</button>
+        </div>
+    </div>
+    
+    <button class="fullscreen-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">⛶</button>
+    
+    <div class="main-content">
+        <div class="desktop-container">
+            <canvas id="desktopCanvas" class="desktop-canvas" width="800" height="600"></canvas>
+            
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+        
+        <div class="sidebar">
+            <div class="controls">
+                <h3>Remote Desktop Controls</h3>
+                <div class="control-group">
+                    <label>Image Quality:</label>
+                    <input type="range" id="qualitySlider" min="10" max="90" value="80" onchange="updateQuality(this.value)">
+                    <span id="qualityValue">80</span>
+                </div>
+                
+                <div class="control-group">
+                    <label>Refresh Rate:</label>
+                    <input type="range" id="refreshSlider" min="0.0001" max="10" value="0.0001" onchange="updateRefreshRate(this.value)">
+                    <span id="refreshValue">0.0001ms</span>
+                </div>
+                
+                <div class="control-info">
+                    <h4>🎮 Control Instructions:</h4>
+                    <ul>
+                        <li><strong>Mouse:</strong> Click, drag, scroll, right-click</li>
+                        <li><strong>Keyboard:</strong> Type directly on the remote computer</li>
+                        <li><strong>Focus:</strong> Click on the screen to enable keyboard input</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3>📁 File Transfer</h3>
+                <div class="file-transfer">
+                    <input type="file" id="fileInput" class="file-input" multiple>
+                    <button class="file-btn" onclick="uploadFile()">📤 Upload File</button>
+                    <button class="file-btn" onclick="downloadFile()">📥 Download File</button>
+                    
+                    <div class="transfer-list" id="transferList">
+                        <!-- Transfer items will be added here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3>🔗 Connection Info</h3>
+                <div class="connection-info">
+                    <div class="info-item">
+                        <span class="label">Session ID:</span>
+                        <span class="value">{{ session_id }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Host:</span>
+                        <span class="value">{{ host_name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Status:</span>
+                        <span class="value" id="connectionStatus">Connected</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Last Update:</span>
+                        <span class="value" id="lastUpdate">Never</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let canvas = document.getElementById('desktopCanvas');
+        let ctx = canvas.getContext('2d');
+        let sessionId = '{{ session_id }}';
+        let hostName = '{{ host_name }}';
+        let isConnected = true;
+        let autoRefresh = true;
+        let refreshInterval = null;
+        let quality = 80;
+        let refreshRate = 0.0001;
+        let lastScreenshot = null;
+        
+        // Mouse and keyboard control variables
+        let mouseDown = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        
+        // Initialize canvas
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Connecting to remote desktop...', canvas.width/2, canvas.height/2);
+        
+        // Mouse and keyboard event handling
+        canvas.addEventListener('mousedown', handleMouseEvent);
+        canvas.addEventListener('mousemove', handleMouseEvent);
+        canvas.addEventListener('keydown', handleKeyEvent);
+        canvas.focus();
+        
+        function handleMouseEvent(event) {
+            if (!isConnected) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.round((event.clientX - rect.left) * (canvas.width / rect.width));
+            const y = Math.round((event.clientY - rect.top) * (canvas.height / rect.height));
+            
+            let actionType = 'mouse_move';
+            if (event.type === 'mousedown') {
+                actionType = 'mouse_click';
+            }
+            
+            sendInput({
+                type: actionType,
+                data: {
+                    x: x,
+                    y: y,
+                    button: event.button === 2 ? 'right' : 'left'
+                }
+            });
+        }
+        
+        function handleKeyEvent(event) {
+            if (!isConnected) return;
+            
+            // Prevent default behavior for some keys
+            if (['F5', 'F11', 'F12'].includes(event.key)) {
+                event.preventDefault();
+            }
+            
+            sendInput({
+                type: 'key_press',
+                data: {
+                    key: event.key
+                }
+            });
+        }
+        
+        function sendInput(inputData) {
+            if (!isConnected) return;
+            
+            fetch('/api/send_input', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    ...inputData
+                })
+            }).catch(error => {
+                console.error('Input failed:', error);
+            });
+        }
+        
+        function refreshScreen() {
+            if (!isConnected) return;
+            
+            fetch(`/api/get_screenshot/${sessionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Screenshot error:', data.error);
+                        return;
+                    }
+                    
+                    displayScreenshot(data);
+                    updateLastUpdate();
+                })
+                .catch(error => {
+                    console.error('Failed to get screenshot:', error);
+                });
+        }
+        
+        function displayScreenshot(screenshotData) {
+            const img = new Image();
+            img.onload = function() {
+                // Clear canvas and draw new image
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Hide loading overlay
+                document.getElementById('loadingOverlay').style.display = 'none';
+            };
+            img.onerror = function() {
+                console.error('Failed to load screenshot');
+            };
+            
+            // Convert base64 to image
+            img.src = 'data:image/jpeg;base64,' + screenshotData.image_data;
+            lastScreenshot = screenshotData;
+        }
+        
+        function startAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+            refreshInterval = setInterval(refreshScreen, refreshRate);
+        }
+        
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+        
+        function toggleAutoRefresh() {
+            autoRefresh = document.getElementById('autoRefreshCheck').checked;
+            if (autoRefresh && isConnected) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        }
+        
+        function updateQuality(value) {
+            quality = parseInt(value);
+            document.getElementById('qualityValue').textContent = value;
+        }
+        
+        function updateRefreshRate(value) {
+            refreshRate = parseFloat(value);
+            document.getElementById('refreshValue').textContent = value + 'ms';
+            if (autoRefresh && isConnected) {
+                startAutoRefresh();
+            }
+        }
+        
+        function updateLastUpdate() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+        }
+        
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+            
+            if (files.length === 0) {
+                alert('Please select a file to upload');
+                return;
+            }
+            
+            for (let file of files) {
+                uploadSingleFile(file);
+            }
+            
+            // Clear file input
+            fileInput.value = '';
+        }
+        
+        function uploadSingleFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const fileData = e.target.result.split(',')[1]; // Remove data URL prefix
+                
+                fetch('/api/upload_file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        filename: file.name,
+                        file_data: fileData
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addTransferItem(file.name, 'upload', 'completed');
+                    } else {
+                        addTransferItem(file.name, 'upload', 'failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Upload failed:', error);
+                    addTransferItem(file.name, 'upload', 'failed');
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function downloadFile() {
+            // This would typically request a file list from the host
+            alert('File download feature will be implemented in the next update');
+        }
+        
+        function addTransferItem(filename, type, status) {
+            const transferList = document.getElementById('transferList');
+            const transferItem = document.createElement('div');
+            transferItem.className = 'transfer-item';
+            
+            transferItem.innerHTML = `
+                <div class="filename">${filename}</div>
+                <div class="status">${type.toUpperCase()}: ${status}</div>
+                <div class="progress">
+                    <div class="progress-bar" style="width: ${status === 'completed' ? '100%' : '0%'}"></div>
+                </div>
+            `;
+            
+            transferList.appendChild(transferItem);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                if (transferItem.parentNode) {
+                    transferItem.parentNode.removeChild(transferItem);
+                }
+            }, 5000);
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error('Fullscreen error:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        function disconnect() {
+            isConnected = false;
+            stopAutoRefresh();
+            document.getElementById('connectionStatus').textContent = 'Disconnected';
+            document.getElementById('connectionStatus').style.color = '#dc3545';
+            
+            // Show disconnect message on canvas
+            ctx.fillStyle = '#333';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            ctx.fillText('Disconnected from remote desktop', canvas.width/2, canvas.height/2);
+            
+            // Redirect after 2 seconds
+            setTimeout(() => {
+                window.location.href = '/client';
+            }, 2000);
+        }
+        
+        // Start initial connection
+        refreshScreen();
+        
+        // Start auto-refresh if enabled
+        if (autoRefresh) {
+            startAutoRefresh();
+        }
+        
+        // Handle page visibility change
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else if (autoRefresh && isConnected) {
+                startAutoRefresh();
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            // Adjust canvas size if needed
+            const container = canvas.parentElement;
+            const maxWidth = container.clientWidth;
+            const maxHeight = container.clientHeight;
+            
+            if (canvas.width !== maxWidth || canvas.height !== maxHeight) {
+                canvas.width = maxWidth;
+                canvas.height = maxHeight;
+                
+                // Redraw last screenshot if available
+                if (lastScreenshot) {
+                    displayScreenshot(lastScreenshot);
+                }
+            }
+        });
+        
+        // Initial resize
+        window.dispatchEvent(new Event('resize'));
+    </script>
+</body>
+</html>
